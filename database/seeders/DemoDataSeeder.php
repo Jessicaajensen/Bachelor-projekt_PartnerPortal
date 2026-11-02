@@ -7,6 +7,7 @@ use Illuminate\Database\Seeder;
 use App\Models\Partner;
 use App\Models\Brand;
 use App\Models\Product;
+use App\Models\User;
 
 class DemoDataSeeder extends Seeder
 {
@@ -37,6 +38,34 @@ class DemoDataSeeder extends Seeder
         'Ventura Quartz',
         'American Classic Railroad Auto 40 mm',
 ];
+
+        User::create([
+            'name' => 'Anna Nordlys',
+            'email' => 'anna@nordlys.test',
+            'password' => 'password',
+            'partner_id' => $nordlys->id,
+        ]);
+
+        User::create([
+            'name' => 'Mads Nordlys',
+            'email' => 'mads@nordlys.test',
+            'password' => 'password',
+            'partner_id' => $nordlys->id,
+        ]);
+
+        User::create([
+            'name' => 'Sofie Fjordhaven',
+            'email' => 'sofie@fjordhaven.test',
+            'password' => 'password',
+            'partner_id' => $fjordhaven->id,
+        ]);
+
+        User::create([
+            'name' => 'Lars Fjordhaven',
+            'email' => 'lars@fjordhaven.test',
+            'password' => 'password',
+            'partner_id' => $fjordhaven->id,
+        ]);
 
 foreach ($hamiltonModels as $i => $name) {
     Product::create([
