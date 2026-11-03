@@ -21,4 +21,9 @@ class Partner extends Model
     {
         return $this->hasMany(Product::class);
     }
+
+    public function uploads(): HasMany
+{
+    return $this->hasMany(Upload::class);
+}
 }
