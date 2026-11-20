@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\CsvReader;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Services\RowValidator;
 
 class UploadController extends Controller
 {
@@ -33,15 +34,24 @@ class UploadController extends Controller
         return redirect()->route('uploads.show', $upload->id);
     }
 
-    public function show($id, CsvReader $reader)
+        public function show($id, CsvReader $reader, RowValidator $validator)
     {
         $upload = auth()->user()->partner->uploads()->findOrFail($id);
 
         $path = Storage::path('uploads/' . $upload->partner_id . '/' . $upload->id . '.csv');
 
+        $csv = $reader->read($path);
+
+        $issues = [];
+
+        foreach ($csv['rows'] as $index => $row) {
+            $issues[$index] = $validator->validate($row);
+        }
+
         return view('uploads.show', [
             'upload' => $upload,
-            'csv' => $reader->read($path),
+            'csv' => $csv,
+            'issues' => $issues,
         ]);
     }
 }
