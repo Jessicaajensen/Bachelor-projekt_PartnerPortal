@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\CsvReader;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class UploadController extends Controller
 {
@@ -28,7 +30,18 @@ class UploadController extends Controller
 
         $file->storeAs('uploads/' . $user->partner_id, $upload->id . '.csv');
 
-        return redirect()->route('uploads.create')
-            ->with('success', 'Filen er modtaget: ' . $upload->filename);
+        return redirect()->route('uploads.show', $upload->id);
+    }
+
+    public function show($id, CsvReader $reader)
+    {
+        $upload = auth()->user()->partner->uploads()->findOrFail($id);
+
+        $path = Storage::path('uploads/' . $upload->partner_id . '/' . $upload->id . '.csv');
+
+        return view('uploads.show', [
+            'upload' => $upload,
+            'csv' => $reader->read($path),
+        ]);
     }
 }

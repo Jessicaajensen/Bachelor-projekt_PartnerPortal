@@ -18,4 +18,5 @@ Route::middleware('auth')->group(function () {
     Route::get('/products/{id}', [ProductController::class, 'show'])->name('products.show');
     Route::get('/upload', [UploadController::class, 'create'])->name('uploads.create');
     Route::post('/upload', [UploadController::class, 'store'])->name('uploads.store');
+    Route::get('/uploads/{id}', [UploadController::class, 'show'])->name('uploads.show');
 });
