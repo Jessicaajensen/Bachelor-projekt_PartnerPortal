@@ -37,6 +37,32 @@ class RowValidator
                 : null;
         }
 
+                $rules[] = function (array $row) {
+            $ean = trim($row['ean'] ?? '');
+
+            if ($ean === '') {
+                return null; // manglende EAN fanges af den påkrævede regel
+            }
+
+            if (preg_match('/^\d+[.,]?\d*E\+\d+$/i', $ean)) {
+                return $this->error(
+                    'ean',
+                    'EAN er gemt som et tal i Excel (' . $ean . ')',
+                    'Formatér EAN-kolonnen som tekst i Excel, og indtast EAN-numrene igen.'
+                );
+            }
+
+            if (! preg_match('/^\d{13}$/', $ean)) {
+                return $this->error(
+                    'ean',
+                    'EAN skal være præcis 13 cifre (der er ' . strlen($ean) . ')',
+                    'Ret EAN til 13 cifre uden mellemrum eller bogstaver.'
+                );
+            }
+
+            return null;
+        };
+
         return $rules;
     }
 
