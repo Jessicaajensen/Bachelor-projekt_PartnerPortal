@@ -42,11 +42,7 @@ class UploadController extends Controller
 
         $csv = $reader->read($path);
 
-        $issues = [];
-
-        foreach ($csv['rows'] as $index => $row) {
-            $issues[$index] = $validator->validate($row);
-        }
+               $issues = $validator->validateAll($csv['rows']);
 
         return view('uploads.show', [
             'upload' => $upload,

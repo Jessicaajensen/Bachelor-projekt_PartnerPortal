@@ -27,6 +27,43 @@ class RowValidator
         return $issues;
     }
 
+        public function validateAll(array $rows): array
+    {
+        $result = [];
+
+        foreach ($rows as $index => $row) {
+            $result[$index] = $this->validate($row);
+        }
+
+        foreach (['sku' => 'SKU', 'ean' => 'EAN'] as $field => $label) {
+            $first = [];
+
+            foreach ($rows as $index => $row) {
+                $value = trim($row[$field] ?? '');
+
+                if ($value === '') {
+                    continue;
+                }
+
+                if ($field === 'ean' && ! preg_match('/^\d{13}$/', $value)) {
+                    continue; // ugyldige EAN'er har allerede fået en fejl
+                }
+
+                if (isset($first[$value])) {
+                    $result[$index][] = $this->error(
+                        $field,
+                        $label . ' ' . $value . ' findes allerede i række ' . ($first[$value] + 1),
+                        'Fjern dubletten, eller ret ' . $label . ', så hver række har en unik værdi.'
+                    );
+                } else {
+                    $first[$value] = $index;
+                }
+            }
+        }
+
+        return $result;
+    }
+
     private function rules(): array
     {
         $rules = [];
@@ -57,6 +94,32 @@ class RowValidator
                     'ean',
                     'EAN skal være præcis 13 cifre (der er ' . strlen($ean) . ')',
                     'Ret EAN til 13 cifre uden mellemrum eller bogstaver.'
+                );
+            }
+
+            return null;
+        };
+
+        $rules[] = function (array $row) {
+            $price = trim($row['recommended_price'] ?? '');
+
+            if ($price === '') {
+                return null; // manglende pris fanges af den påkrævede regel
+            }
+
+            if (! preg_match('/^\d+([.,]\d{1,2})?$/', $price)) {
+                return $this->error(
+                    'recommended_price',
+                    'Vejl. pris "' . $price . '" er ikke et gyldigt beløb',
+                    'Skriv prisen som et tal med højst to decimaler, fx 3950,50 eller 3950.50, uden valuta og tusindtalsseparator.'
+                );
+            }
+
+            if ((float) str_replace(',', '.', $price) <= 0) {
+                return $this->error(
+                    'recommended_price',
+                    'Vejl. pris skal være større end 0',
+                    'Ret prisen til et beløb over 0.'
                 );
             }
 
