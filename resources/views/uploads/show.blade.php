@@ -12,7 +12,6 @@
     <ul>
         <li>Skilletegn fundet: {{ $csv['delimiter'] === ';' ? 'semikolon' : 'komma' }}</li>
         <li>Kolonner fundet i filen: {{ implode(', ', $csv['headers']) }}</li>
-        <li>Rækker: {{ count($csv['rows']) }}</li>
     </ul>
 
     @if (count($missing) > 0)
@@ -25,34 +24,50 @@
         </ul>
         <p>Ret kolonnenavnene i filen, og upload den igen.</p>
     @else
-        <p>Rækker med fejl: {{ collect($issues)->filter(fn ($list) => count($list) > 0)->count() }}</p>
+        <h2>Oversigt</h2>
+        <p>
+            {{ $counts['klar'] }} rækker er klar,
+            {{ $counts['fejl'] }} har fejl,
+            {{ $counts['advarsler'] }} har advarsler.
+        </p>
 
-        <h2>Første rækker</h2>
+        <p>
+            @foreach (['alle' => 'Alle (' . count($csv['rows']) . ')', 'fejl' => 'Fejl (' . $counts['fejl'] . ')', 'advarsler' => 'Advarsler (' . $counts['advarsler'] . ')', 'klar' => 'Klar (' . $counts['klar'] . ')'] as $key => $label)
+                @if ($tab === $key)
+                    <strong>[{{ $label }}]</strong>
+                @else
+                    <a href="{{ route('uploads.show', ['id' => $upload->id, 'fane' => $key]) }}">{{ $label }}</a>
+                @endif
+            @endforeach
+        </p>
 
         <table border="1" cellpadding="6">
             <thead>
                 <tr>
                     <th>Række</th>
+                    <th>Status</th>
                     @foreach ($csv['headers'] as $header)
                         <th>{{ $header }}</th>
                     @endforeach
-                    <th>Resultat</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (array_slice($csv['rows'], 0, 10, true) as $index => $row)
+                @foreach ($visible as $index)
                     <tr>
                         <td>{{ $index + 1 }}</td>
+                        <td>{{ ['fejl' => 'Fejl', 'advarsler' => 'Advarsel', 'klar' => 'Klar'][$status[$index]] }}</td>
                         @foreach ($csv['headers'] as $header)
-                            <td>{{ $row[$header] }}</td>
+                            @php
+                                $cellIssues = collect($issues[$index])->where('field', $header);
+                                $color = $cellIssues->contains('level', 'error') ? '#fdd' : ($cellIssues->isNotEmpty() ? '#ffd' : 'transparent');
+                            @endphp
+                            <td style="background: {{ $color }};">
+                                {{ $csv['rows'][$index][$header] }}
+                                @foreach ($cellIssues as $issue)
+                                    <div><small>{{ $issue['message'] }}. {{ $issue['suggestion'] }}</small></div>
+                                @endforeach
+                            </td>
                         @endforeach
-                        <td>
-                            @forelse ($issues[$index] as $issue)
-                                <div>{{ $issue['level'] === 'error' ? 'Fejl' : 'Advarsel' }}: {{ $issue['message'] }}. {{ $issue['suggestion'] }}</div>
-                            @empty
-                                Klar
-                            @endforelse
-                        </td>
                     </tr>
                 @endforeach
             </tbody>

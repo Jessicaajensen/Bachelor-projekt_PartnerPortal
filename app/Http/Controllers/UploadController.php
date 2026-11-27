@@ -34,7 +34,7 @@ class UploadController extends Controller
         return redirect()->route('uploads.show', $upload->id);
     }
 
-        public function show($id, CsvReader $reader, RowValidator $validator)
+           public function show($id, CsvReader $reader, RowValidator $validator)
     {
         $upload = auth()->user()->partner->uploads()->findOrFail($id);
 
@@ -42,13 +42,36 @@ class UploadController extends Controller
 
         $csv = $reader->read($path);
 
-               $issues = $validator->validateAll($csv['rows']);
+        $issues = $validator->validateAll($csv['rows']);
+
+        // Hver række får status: fejl, advarsler eller klar
+        $status = [];
+
+        foreach ($issues as $index => $list) {
+            $levels = array_column($list, 'level');
+
+            $status[$index] = in_array('error', $levels, true)
+                ? 'fejl'
+                : (in_array('warning', $levels, true) ? 'advarsler' : 'klar');
+        }
+
+        $counts = array_count_values($status) + ['fejl' => 0, 'advarsler' => 0, 'klar' => 0];
+
+        $tab = request('fane', 'alle');
+
+        $visible = $tab === 'alle'
+            ? array_keys($status)
+            : array_keys(array_filter($status, fn ($s) => $s === $tab));
 
         return view('uploads.show', [
             'upload' => $upload,
             'csv' => $csv,
             'issues' => $issues,
-             'missing' => $validator->missingColumns($csv['headers']),
+            'missing' => $validator->missingColumns($csv['headers']),
+            'status' => $status,
+            'counts' => $counts,
+            'tab' => $tab,
+            'visible' => array_slice($visible, 0, 100),
         ]);
     }
 }
