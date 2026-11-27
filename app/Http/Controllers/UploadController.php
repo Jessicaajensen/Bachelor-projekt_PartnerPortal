@@ -48,6 +48,7 @@ class UploadController extends Controller
             'upload' => $upload,
             'csv' => $csv,
             'issues' => $issues,
+             'missing' => $validator->missingColumns($csv['headers']),
         ]);
     }
 }

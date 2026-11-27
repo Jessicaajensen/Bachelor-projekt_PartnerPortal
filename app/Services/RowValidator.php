@@ -64,6 +64,19 @@ class RowValidator
         return $result;
     }
 
+        public function missingColumns(array $headers): array
+    {
+        $missing = [];
+
+        foreach (self::REQUIRED as $field => $label) {
+            if (! in_array($field, $headers, true)) {
+                $missing[$field] = $label;
+            }
+        }
+
+        return $missing;
+    }
+
     private function rules(): array
     {
         $rules = [];
