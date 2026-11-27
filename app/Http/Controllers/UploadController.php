@@ -34,17 +34,33 @@ class UploadController extends Controller
         return redirect()->route('uploads.show', $upload->id);
     }
 
-           public function show($id, CsvReader $reader, RowValidator $validator)
+              public function show($id, CsvReader $reader, RowValidator $validator)
     {
         $upload = auth()->user()->partner->uploads()->findOrFail($id);
 
         $path = Storage::path('uploads/' . $upload->partner_id . '/' . $upload->id . '.csv');
 
+        // Kolonnenavne og skilletegn læses altid fra den oprindelige fil
         $csv = $reader->read($path);
+
+        // Første gang uploaden vises, gemmes rækkerne i databasen
+        if ($upload->rows()->count() === 0) {
+            foreach ($csv['rows'] as $index => $row) {
+                $upload->rows()->create([
+                    'row_number' => $index + 1,
+                    'data' => $row,
+                ]);
+            }
+        }
+
+        // Herefter bruges rækkerne fra databasen, så rettelser kan gemmes
+        $dbRows = $upload->rows()->orderBy('row_number')->get();
+
+        $csv['rows'] = $dbRows->pluck('data')->all();
+        $rowIds = $dbRows->pluck('id')->all();
 
         $issues = $validator->validateAll($csv['rows']);
 
-        // Hver række får status: fejl, advarsler eller klar
         $status = [];
 
         foreach ($issues as $index => $list) {
@@ -66,6 +82,7 @@ class UploadController extends Controller
         return view('uploads.show', [
             'upload' => $upload,
             'csv' => $csv,
+            'rowIds' => $rowIds,
             'issues' => $issues,
             'missing' => $validator->missingColumns($csv['headers']),
             'status' => $status,
@@ -73,5 +90,30 @@ class UploadController extends Controller
             'tab' => $tab,
             'visible' => array_slice($visible, 0, 100),
         ]);
+    }
+
+        public function update($id, Request $request)
+    {
+        $upload = auth()->user()->partner->uploads()->findOrFail($id);
+
+        $editable = ['sku', 'name', 'brand', 'ean', 'recommended_price'];
+
+        foreach ($request->input('rows', []) as $rowId => $values) {
+            $row = $upload->rows()->findOrFail($rowId);
+            $data = $row->data;
+
+            foreach ($editable as $field) {
+                if (array_key_exists($field, $values)) {
+                    $data[$field] = trim((string) $values[$field]);
+                }
+            }
+
+            $row->data = $data;
+            $row->save();
+        }
+
+        return redirect()
+            ->route('uploads.show', ['id' => $upload->id, 'fane' => 'fejl'])
+            ->with('success', 'Rettelserne er gemt.');
     }
 }

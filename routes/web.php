@@ -9,6 +9,7 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout']);
 
+
 Route::get('/', function () {
     return view('home');
 })->middleware('auth');
@@ -19,4 +20,5 @@ Route::middleware('auth')->group(function () {
     Route::get('/upload', [UploadController::class, 'create'])->name('uploads.create');
     Route::post('/upload', [UploadController::class, 'store'])->name('uploads.store');
     Route::get('/uploads/{id}', [UploadController::class, 'show'])->name('uploads.show');
+    Route::put('/uploads/{id}', [UploadController::class, 'update'])->name('uploads.update');
 });
